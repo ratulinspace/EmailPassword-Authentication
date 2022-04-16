@@ -1,5 +1,5 @@
 import './App.css';
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import app from "./firebase.init";
 import { Button, Form } from 'react-bootstrap';
@@ -13,12 +13,16 @@ function App() {
   const [error, setError] = useState('');
   const [password, setPassword] = useState('');
   const [validated, setValidated] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   const handleEmailBlur = (e) => {
     setEmail(e.target.value);
   }
   const handlePasswordBlur = (e) => {
     setPassword(e.target.value);
+  }
+  const handleRegisteredChange = (e) => {
+    setRegistered(e.target.checked);
   }
   const handleFormSubmit = (e) => {
     e.preventDefault(); //For stopping auto reload the page
@@ -36,14 +40,29 @@ function App() {
     setValidated(true);
     setError('');
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(result => {
-        const user = result.user;
-        console.log(user);
-      })
-      .catch(error => {
-        console.error(error);
-      })
+    if (registered) {
+      signInWithEmailAndPassword(auth, email, password)
+        .then(result => {
+          const user = result.user;
+          console.log(user)
+        })
+        .catch(error => {
+          console.error(error);
+          setError(error.message);
+        })
+    }
+    else {
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(result => {
+          const user = result.user;
+          console.log(user);
+        })
+        .catch(error => {
+          console.error(error);
+          setError(error.message);
+        })
+    }
+
 
     e.preventDefault();
   }
@@ -51,8 +70,8 @@ function App() {
   return (
     <div className='app'>
       <h3 className='text-center mt-2'>Email Password Authentication</h3>
-      <div className="registration border p-4 w-50 mx-auto mt-5">
-        <h3 className="text-primary">Register Now</h3>
+      <div className="registration border p-3 w-50 mx-auto mt-5">
+        <h3 className="text-primary">{registered ? "Login" : "Register"} Now</h3>
 
         <Form noValidate validated={validated} onSubmit={handleFormSubmit} className='mt-4'>
           <Form.Group className="mb-3" controlId="formBasicEmail">
@@ -74,8 +93,11 @@ function App() {
             </Form.Control.Feedback>
           </Form.Group>
           <p className='text-danger'>{error}</p>
+          <Form.Group className="mb-3" controlId="formBasicCheckbox">
+            <Form.Check onChange={handleRegisteredChange} type="checkbox" label="Already Registered?" />
+          </Form.Group>
           <Button variant="primary" type="submit">
-            Register
+            {registered ? 'Login' : 'Register'}
           </Button>
         </Form>
 
