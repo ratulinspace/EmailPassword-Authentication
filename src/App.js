@@ -1,5 +1,5 @@
 import './App.css';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, updateProfile } from "firebase/auth";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import app from "./firebase.init";
 import { Button, Form } from 'react-bootstrap';
@@ -9,12 +9,16 @@ const auth = getAuth(app);
 
 function App() {
 
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [validated, setValidated] = useState(false);
   const [registered, setRegistered] = useState(false);
 
+  const handleNameBlur = (event) => {
+    setName(event.target.value);
+  }
   const handleEmailBlur = (e) => {
     setEmail(e.target.value);
   }
@@ -23,6 +27,12 @@ function App() {
   }
   const handleRegisteredChange = (e) => {
     setRegistered(e.target.checked);
+  }
+  const handlePasswordReset = () => {
+    sendPasswordResetEmail(auth, email)
+      .then(() => {
+        console.log('email sent')
+      })
   }
   const handleFormSubmit = (e) => {
     e.preventDefault(); //For stopping auto reload the page
@@ -56,15 +66,35 @@ function App() {
         .then(result => {
           const user = result.user;
           console.log(user);
+          setEmail('');
+          setPassword('');
+          verifyEmail();
+          setUserName();
         })
         .catch(error => {
           console.error(error);
           setError(error.message);
         })
     }
-
+    const setUserName = () => {
+      updateProfile(auth.currentUser, {
+        displayName: name
+      }).then(() => {
+        console.log('Updating name');
+      })
+        .catch(error => {
+          setError(error.message);
+        })
+    }
+    const verifyEmail = () => {
+      sendEmailVerification(auth.currentUser)
+        .then(() => {
+          console.log('Email verification send');
+        })
+    }
 
     e.preventDefault();
+
   }
 
   return (
@@ -74,6 +104,14 @@ function App() {
         <h3 className="text-primary">{registered ? "Login" : "Register"} Now</h3>
 
         <Form noValidate validated={validated} onSubmit={handleFormSubmit} className='mt-4'>
+          {!registered && <Form.Group className="mb-3" controlId="formBasicEmail">
+            <Form.Label>Your name</Form.Label>
+            <Form.Control onBlur={handleNameBlur} type="text" placeholder="Enter your name" required />
+            <Form.Control.Feedback type="invalid">
+              Please provide a your name.
+            </Form.Control.Feedback>
+          </Form.Group>}
+
           <Form.Group className="mb-3" controlId="formBasicEmail">
             <Form.Label>Email address</Form.Label>
             <Form.Control onBlur={handleEmailBlur} type="email" placeholder="Enter email" required />
@@ -92,13 +130,17 @@ function App() {
               Please provide a valid password.
             </Form.Control.Feedback>
           </Form.Group>
-          <p className='text-danger'>{error}</p>
+          <p className="text-danger">{error}</p>
           <Form.Group className="mb-3" controlId="formBasicCheckbox">
             <Form.Check onChange={handleRegisteredChange} type="checkbox" label="Already Registered?" />
           </Form.Group>
+          <Button onClick={handlePasswordReset} variant="link">Forget Password?</Button>
+          <br />
+          <br />
           <Button variant="primary" type="submit">
             {registered ? 'Login' : 'Register'}
           </Button>
+
         </Form>
 
       </div>
